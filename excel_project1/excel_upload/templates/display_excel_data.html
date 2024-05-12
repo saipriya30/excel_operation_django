@@ -1,0 +1,97 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Display Excel Data</title>
+    
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        td input {
+            border: none;
+            width: 100%;
+        }
+    </style>
+    
+</head>
+<body>
+    <h2>Excel Data</h2>
+    <table id="excelTable">
+        <thead>
+            <tr>
+                {% for header in headers %}
+                <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in data %}
+            <tr>
+                {% for key, value in row.items %}
+                <td><input type="text" name="{{ key }}" value="{{ value }}"></td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <a id="saveChangesBtn" href="{% url 'display_table' %}">Save Changes</a>
+
+    <script>
+        const dataTable = document.getElementById('excelTable');
+        const saveButton = document.getElementById('saveChangesBtn');
+    
+        saveButton.addEventListener('click', () => {
+            const updatedData = [];
+            const tableRows = dataTable.getElementsByTagName('tr');
+        
+            for (let i = 1; i < tableRows.length; i++) {
+                const rowData = {};
+                const cells = tableRows[i].getElementsByTagName('td');
+            
+                for (let j = 0; j < cells.length; j++) {
+                    const key = dataTable.getElementsByTagName('th')[j].innerHTML;
+                    rowData[key] = cells[j].innerHTML;
+                }
+            
+                updatedData.push(rowData);
+            }
+        
+            fetch(`/save_all_changes/{{ file_id|escapejs }}/`,  {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+                body: JSON.stringify(updatedData),
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('Changes saved successfully.');
+                    // Handle success response
+                } else {
+                    console.error('Failed to save changes:', response.statusText);
+                    // Handle error response
+                }
+            })
+            .catch(error => {
+                console.error('Error saving changes:', error);
+                // Handle network errors
+            });
+        });
+    </script>
+   
+</body>
+</html>
